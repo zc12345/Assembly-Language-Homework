@@ -1,0 +1,48 @@
+DATAS SEGMENT
+	ORG	10H
+DATA1	DB	7
+DATA2	DB	0
+QOUT	DB	?
+REMAIN	DB	?
+	ORG 20H
+NUM	DB	20	DUP(?);
+	ORG 30H
+SUM	DW	?
+    ;此处输入数据段代码  
+DATAS ENDS
+
+STACKS SEGMENT
+    ;此处输入堆栈段代码
+STACKS ENDS
+
+CODES SEGMENT
+    ASSUME CS:CODES,DS:DATAS,SS:STACKS
+START:
+    MOV AX,DATAS
+    MOV DS,AX
+    ;100以内7的倍数
+    MOV DX,100
+    MOV BX,OFFSET NUM
+LP:    
+    MOV AL,DL 
+    SUB AH,AH
+    DIV DATA1
+    MOV QOUT,AL;AL包含商
+    MOV REMAIN,AH;DH包含余数
+    CMP DATA2,AH
+    JNE NEXT
+    MOV [BX],DL
+    ADD SUM,DX
+    INC BX
+NEXT:DEC DX
+	JNZ LP         
+    ;此处输入代码段代码
+    MOV AH,4CH
+    INT 21H
+CODES ENDS
+    END START
+
+
+
+
+
