@@ -1,6 +1,6 @@
-	;��ģ��3
-	;��ģ����ʾ���ΪFFFFH��ʮ��������
-	;AX=����ʾ����λʮ��������
+	;子模块3
+	;本模块显示最大为FFFFH的十六进制数
+	;AX=待显示的四位十六进制数
 	EXTRN KASC:BYTE
 	PUBLIC SHOWHEX
 	.MODEL SMALL
@@ -15,27 +15,27 @@ SHOWHEX	PROC	FAR
 	
 	;MOV AX,0030H
 	MOV BX,AX
-	MOV DI,4;������ֵΪ4ʱ���Ա�ʾBX
+	MOV DI,4;计数器值为4时可以表示BX
 LP:	MOV CL,4
 	ROL BX,CL
 	MOV AX,BX
-	OR AL,30H;�ֱ���ȡ����λ��ȡ����λ
-	CMP AL,3AH;�ж��Ƿ��Ǵ���0AH
+	AND AL,0FH;分别先取高四位后取低四位
+	CMP AL,0AH;判断是否是大于0AH
 	JGE SHOW1
+	ADD AL,30H
 	MOV AH,02
 	MOV DL,AL
 	INT 21H
 	JMP NEXT
 SHOW1:
-	ADD AL,07H
-	ADD AL,40H
+	ADD AL,37H
 	MOV AH,02
 	MOV DL,AL
 	INT 21H
 NEXT:
 	DEC DI
 	JNZ LP
-    ;��ʾ��ʮ��������
+    ;表示是十六进制数
     ;MOV AH,02
     ;MOV DX,'H'
     ;INT 21H
