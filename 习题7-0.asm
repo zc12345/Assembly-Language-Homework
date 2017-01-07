@@ -30,8 +30,8 @@ MAIN PROC FAR
 	INT 21H
 MAIN ENDP
 	;----------------------
-	;×ÓÄ£¿é1
-	;ÊµÏÖ¼üÅÌÊäÈë4Î»Ê®½øÖÆÊýµÄasciiÂë´æÈëkasc¿ªÊ¼µ¥Ôª
+	;å­æ¨¡å—1
+	;å®žçŽ°é”®ç›˜è¾“å…¥4ä½åè¿›åˆ¶æ•°çš„asciiç å­˜å…¥kascå¼€å§‹å•å…ƒ
 GETASC PROC FAR
 	PUSHF
 	PUSH DI
@@ -53,8 +53,8 @@ LPG:MOV AH,0
 GETASC ENDP
 
 	;----------------------
-	;×ÓÄ£¿é2
-	;½«kascµ¥Ôª¿ªÊ¼´æ·ÅµÄ4Î»ascÂë×ª»»Îª16½øÖÆÊý
+	;å­æ¨¡å—2
+	;å°†kascå•å…ƒå¼€å§‹å­˜æ”¾çš„4ä½ascç è½¬æ¢ä¸º16è¿›åˆ¶æ•°
 	;
 TRANS	PROC FAR
 	PUSHF
@@ -81,9 +81,9 @@ LPT:MOV AL,[SI+BX]
 	POPF
 	
 TRANS	ENDP
-	;×ÓÄ£¿é3
-	;±¾Ä£¿éÏÔÊ¾×î´óÎªFFFFHµÄÊ®Áù½øÖÆÊý
-	;AX=´ýÏÔÊ¾µÄËÄÎ»Ê®Áù½øÖÆÊý
+	;å­æ¨¡å—3
+	;æœ¬æ¨¡å—æ˜¾ç¤ºæœ€å¤§ä¸ºFFFFHçš„åå…­è¿›åˆ¶æ•°
+	;AX=å¾…æ˜¾ç¤ºçš„å››ä½åå…­è¿›åˆ¶æ•°
 SHOWHEX	PROC	FAR
 
 	PUSHF
@@ -97,16 +97,16 @@ SHOWHEX	PROC	FAR
 LPS:MOV CL,4
 	ROL BX,CL
 	MOV AX,BX
-	OR AL,30H
-	CMP AL,3AH
+	AND AL,0FH
+	CMP AL,0AH
 	JGE SHOW1
+	ADD AL,30H
 	MOV AH,02
 	MOV DL,AL
 	INT 21H
 	JMP NEXT
 SHOW1:
-	ADD AL,07H
-	ADD AL,40H
+	ADD AL,37H
 	MOV AH,02
 	MOV DL,AL
 	INT 21H
