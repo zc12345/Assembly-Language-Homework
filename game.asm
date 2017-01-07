@@ -1,6 +1,22 @@
 DATAS SEGMENT
-	MESSAGE1	DB	'INFO:',0AH,0DH,'<-   :LEFT',0AH,0DH,'->   :RIGHT',0AH,0DH,'SPACE:SHOOT',0AH,0DH,'Q    :EXIT',0AH,0DH,'ENTER:START GAME!','$' 
-	full_score	dw 15
+	MESSAGE1	DB	'***************************************',0AH,0DH,
+					'*****************INFO:*****************',0AH,0DH,;'$'
+					'*****    <-   :  move left         ****',0AH,0DH,;'$'
+					'*****    ->   :  move right        ****',0AH,0DH,;'$'
+					'*****    space:  shoot             ****',0AH,0DH,;'$'
+					'*****    Q    :  exit              ****',0AH,0DH,;'$'
+					'*****    enter:  start game        ****',0AH,0DH,;'$'
+					'***************************************',0AH,0DH,'$'
+	winshow1 	DB  '***************************************',0AH,0DH,
+					'*************** You Win! **************',0AH,0DH,'$'
+	quitshow1 	DB  '***************************************',0AH,0DH,
+					'************* What a pity! ************',0AH,0DH,'$'
+	winshow2	DB	0AH,0DH,
+					'***************************************',0AH,0DH,
+					'*****    Q    :  exit              ****',0AH,0DH,;'$'
+					'*****    enter:  new game          ****',0AH,0DH,;'$'
+					'***************************************',0AH,0DH,'$'
+	full_score	dw 8
 	score dw 0
 	score2 dw 30h,'$'
 	DBUFFER DB 8 DUP (':'),'$'
@@ -37,25 +53,6 @@ clear_screen macro h1,l1,h2,l2
 	mov dl,00h
 	int 10h
 	endm
-;============================================
-;设置光标位置
-CURSOR MACRO	HA,LI
-	MOV AH,02
-	MOV BH,00
-	MOV DH,HA
-	MOV DL,LI
-	INT 10H
-	ENDM
-;===========================================
-;回车换行
-CRLF MACRO
-	MOV AH,02
-	MOV DL,0AH
-	INT 21H
-	MOV AH,02
-	MOV DL,ODH
-	INT 21H
-	ENDM
 ;============================================
 ;时间数值转换成ASCII码字符子程序
 BCDASC MACRO DBUFFERs 
@@ -102,6 +99,29 @@ LINELP:
 	POPF
 ENDM
 ;========================================================
+;清除飞机的宏
+clearplane macro hcood,lcood
+local clearlp
+	pushf
+	push cx
+	push dx
+	push di
+    mov dx,hcood
+    mov cx,lcood
+
+	;擦除飞机
+	mov di,19
+clearlp:
+	line dx,cx,17,0h
+	inc dx
+	dec di
+	jnz clearlp
+	pop di
+	pop dx
+	pop cx
+	popf
+endm
+;========================================================
 ;画出我方飞机的宏
 myplane macro hcood,lcood
 	local planelp1,planelp2
@@ -111,8 +131,8 @@ myplane macro hcood,lcood
     push di
     push si
     
-    mov ax,000dh;320*200  彩色图形(EGA)
-    int 10h
+    ;mov ax,000dh;320*200  彩色图形(EGA)
+    ;int 10h
     mov dx,hcood
     mov cx,lcood
 ;我机===================================
@@ -295,8 +315,8 @@ plane macro hcood,lcood
     push di
     push si
     
-    mov ax,000dh;320*200  彩色图形(EGA)
-    int 10h
+    ;mov ax,000dh;320*200  彩色图形(EGA)
+    ;int 10h
     mov dx,hcood
     mov cx,lcood
 
@@ -603,27 +623,28 @@ START:
 	MOV AX,DATAS
 	MOV DS,AX
 	;清屏宏调用
+game:
+	MOV SCORE,0
+	MOV SCORE2,30H
 	clear_screen 00,00,24,79 
 	;80*25 16色文本显示
 	MUSICBEGIN1
 	MOV AH,09
     MOV DX,OFFSET MESSAGE1
     INT 21H
-    
+CHECKENTER:    
     MOV AH,0
     INT 16H
-    ;CMP AL,1CH
-    ;JZ GAME
-    
+    CMP AH,1CH
+    JNE CHECKENTER
+    ;CMP AL,'q'
+    ;JE OVER
     ;画飞机
 	clear_screen 00,00,24,79 
+	;mov ax,0001h
+	;int 10h
 	mov ax,0013h
 	int 10h
-	mov ax,100
-	mov dx,0
-	mov plane_x,ax
-	mov plane_y,dx
-	plane	plane_x,plane_y
 	
 	mov ah,0EH
 	mov al,03h
@@ -637,14 +658,12 @@ input:
 	mov ah,2	;设置图像位置
 	inc dl		;增加列
 	int 10h
-	mov al,01h	;射击图像
+	mov al,01h	;敌机图像
 	mov bh,0
 	mov bl,084h	;图像对应的属性,77H白底白字
-	;MOV BL,[SI]
 	mov cx,1	;显示一次
 	mov ah,9
 	int 10h
-	;inc si
 	dec di
 	jnz input1
 	
@@ -659,11 +678,18 @@ input:
 	mov dh,22
 	mov dl,18
 	int 10h
-	mov ah,09h
-	mov al,1H	;我方飞机的图像
-	mov bl,0fh	;飞机属性，黑底白字正常
-	mov cx,1	;字符重复1次
-	int 10h
+	
+	mov plane_x,140
+	mov plane_y,176
+	myplane	plane_y,plane_x
+	;call delay
+	;clearplane plane_y,plane_x
+	
+	;mov ah,09h
+	;mov al,1H	;我方飞机的图像
+	;mov bl,0fh	;飞机属性，黑底白字正常
+	;mov cx,1	;字符重复1次
+	;int 10h
 	jmp in_key
 				
 input1:
@@ -691,72 +717,93 @@ in_key:			;从键盘输入字符
 move_l:
 	cmp al,4bh 	; 按左键(扫描码)实现图像随光标向左移动
 	jnz move_r
-	mov ah,09h
-	mov al,' '
-	mov cx,1
-	int 10h
+	;像素点表示我机
+	clearplane plane_y,plane_x
+	sub plane_x,8
+	myplane plane_y,plane_x
+	;mov ah,09h
+	;mov al,' '
+	;mov cx,1
+	;int 10h
 	dec dl
 	mov ah,02h
 	int 10h
-	mov ah,09h
-	mov al,1h
-	mov bl,0fh
-	mov cx,1
-	int 10h
+	
+	;mov ah,09h
+	;mov al,1h
+	;mov bl,0fh
+	;mov cx,1
+	;int 10h
 	;检查是否出现越界情况
 	cmp dl,5
 	jge movelnext
 	;越界的时候
-	mov ah,09h
-	mov al,' '
-	mov cx,1
-	int 10h
+	;mov ah,09h
+	;mov al,' '
+	;mov cx,1
+	;int 10h
+	
 	inc dl
 	mov ah,02h
 	int 10h
-	mov ah,09h
-	mov al,1h
-	mov bl,0fh
-	mov cx,1
-	int 10h
+	;像素点表示我机
+	clearplane plane_y,plane_x
+	add plane_x,8
+	myplane plane_y,plane_x
+	;mov ah,09h
+	;mov al,1h
+	;mov bl,0fh
+	;mov cx,1
+	;int 10h
 	;没有越界
 movelnext:	
-	jmp in_key
+	;jmp in_key
+	jmp timer
 		
 move_r:
 	cmp al,4dh ;按右键（扫描码）实现图像随光标向右移动
 	jnz in_key
-	mov ah,09h
-	mov al ,' '
-	mov cx,1
-	int 10h
+	;像素点表示我机
+	clearplane plane_y,plane_x
+	add plane_x,8
+	myplane plane_y,plane_x	
+	
+	;mov ah,09h
+	;mov al ,' '
+	;mov cx,1
+	;int 10h
 	inc dl
 	mov ah,02h
 	int 10h
-	mov ah,09h
-	mov al,1h
-	mov bl,0fh
-	mov cx,1
-	int 10h
+	;mov ah,09h
+	;mov al,1h
+	;mov bl,0fh
+	;mov cx,1
+	;int 10h
 	;检查是否越界
 	cmp dl,35
 	jle movernext
 	;如果出现越界
-	mov ah,09h
-	mov al,' '
-	mov cx,1
-	int 10h
+	;mov ah,09h
+	;mov al,' '
+	;mov cx,1
+	;int 10h
 	dec dl
 	mov ah,02h
 	int 10h
-	mov ah,09h
-	mov al,1h
-	mov bl,0fh
-	mov cx,1
-	int 10h
+	;像素点表示我机
+	clearplane plane_y,plane_x
+	sub plane_x,8
+	myplane plane_y,plane_x
+	;mov ah,09h
+	;mov al,1h
+	;mov bl,0fh
+	;mov cx,1
+	;int 10h
 	;没有越界
 movernext:	
-	jmp in_key
+	;jmp in_key
+	jmp timer
 	
 disappear:
 	push ax
@@ -837,9 +884,66 @@ next2:
 	MUSICSHOOT1
 	CALL SHOWSCORE
 	;显示分数
+timer:	
+	call timer1
+	;调用计时器显示时间
+next4:
+	;射击后将光标回到原射击位置
+	mov ah,02h 
+	mov bh,00h
+	mov dh,22d
+	int 10h
+	;mov ah,09h
+	;mov al,1h
+	;mov bl,0fh
+	;mov cx,1
+	;int 10h
 	
-	PUSH SI
+	cmp score,8
+	JNE IN_KEY
+	;全部打中之后显示分数	
+	clear_screen 0,0,24,79
+	mov ax,0002h
+	int 10h
+	mov ah,09
+	mov dx,offset winshow1
+	int 21h
+	call showscore
+	call timer1
+	mov ah,09
+	mov dx,offset winshow2
+	int 21h
+
+	MUSICWIN1
+	JMP CHECKNEXT
+over:	
+	clear_screen 0,0,24,79
+	mov ax,0002h
+	int 10h
+	mov ah,09
+	mov dx,offset quitshow1
+	int 21h
+	call showscore
+	call timer1
+	mov ah,09
+	mov dx,offset winshow2
+	int 21h
+CHECKNEXT:
+	mov ah,00
+	int 16h
+	CMP AH,1CH
+	JE GAME
+	CMP AL,'q'
+	JE QUIT
+	JMP CHECKNEXT
+QUIT:
+	MOV AH,4CH
+	INT 21H
+;====================================================================
+;计时器=========================================
+timer1 proc far
 	PUSH BX
+	PUSH SI
 	PUSH AX
 	PUSH CX
 	PUSH DX
@@ -847,7 +951,7 @@ next2:
 	MOV AH,02
 	MOV BH,00
 	MOV DH,02
-	MOV DL,42H
+	MOV DL,15H
 	INT 10H
 
 	MOV SI,0
@@ -912,32 +1016,8 @@ N2: SUB DBUFFER2[7],AL
 	POP AX
 	POP BX
 	POP SI
-next4:
-	;射击后将光标回到原射击位置
-	mov ah,02h 
-	mov bh,00h
-	mov dh,22d
-	int 10h
-	mov ah,09h
-	mov al,1h
-	mov bl,0fh
-	mov cx,1
-	int 10h
-	
-	cmp score,8
-	JNE IN_KEY
-	;全部打中之后显示分数	
-	clear_screen 0,0,24,79
-	call showscore
-	MUSICWIN1
-	JMP WINOVER
-over:	
-	clear_screen 0,0,24,79
-	call showscore
-WINOVER:
-	MOV AH,4CH
-	INT 21H
-;====================================================================
+timer1 endp
+
 ;计分板	===================================
 COUNTSCORE PROC FAR
 	;画计分板
@@ -970,7 +1050,7 @@ COUNTTIME PROC FAR
 	MOV AH,02
 	MOV BH,00	
 	MOV DH,02	;time光标位置行数
-	MOV DL,42H	;time光标位置列数
+	MOV DL,15H	;time光标位置列数
 	INT 10H
 	
 	;显示时间
@@ -1088,3 +1168,8 @@ DELAYM2 ENDP
 ;==================================================
 CODES ENDS
 END START
+
+
+
+
+
